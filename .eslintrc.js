@@ -1,0 +1,35 @@
+module.exports = {
+	root: true,
+	env: {
+		node: true,
+	},
+	extends: [
+		'plugin:vue/essential',
+		'plugin:@typescript-eslint/recommended',
+		'eslint:recommended',
+		'@vue/typescript/recommended',
+		'@vue/prettier',
+		'@vue/prettier/@typescript-eslint',
+	],
+	parserOptions: {
+		parser: '@typescript-eslint/parser',
+		ecmaVersion: 2020,
+	},
+	rules: {
+		'no-console': process.env.NODE_ENV === 'production' ? 'warn' : 'off',
+		'no-debugger': process.env.NODE_ENV === 'production' ? 'warn' : 'off',
+		'array-callback-return': 'error',
+		'no-extra-bind': 'error',
+		'no-fallthrough': 'error',
+		'require-await': 'error',
+		'@typescript-eslint/class-name-casing': 'off',
+		'@typescript-eslint/explicit-function-return-type': 'off',
+		'@typescript-eslint/explicit-module-boundary-types': 'off',
+		'@typescript-eslint/interface-name-prefix': 'off',
+		'@typescript-eslint/no-explicit-any': 'off',
+		'@typescript-eslint/no-non-null-assertion': 'off',
+		'@typescript-eslint/no-unused-vars': 'warn',
+		'vue/experimental-script-setup-vars': 'off',
+		eqeqeq: ['warn', 'smart'],
+	},
+};

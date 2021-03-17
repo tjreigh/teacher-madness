@@ -6,10 +6,9 @@ const srcDir = path.resolve(__dirname, 'src');
 const webDir = path.resolve(srcDir, 'web');
 
 const utilDir = path.resolve(__dirname, srcDir, 'util');
-const storeDir = path.resolve(__dirname, srcDir, webDir, 'stores');
 const typesDir = path.resolve(__dirname, srcDir, 'types');
 
-const includePaths = [webDir, utilDir, storeDir, typesDir];
+const includePaths = [webDir, utilDir, typesDir];
 
 // Safely check env string
 const isDevEnv = process.env.NODE_ENV.trim().substring(0, 3).toLowerCase() === 'dev';
@@ -29,7 +28,6 @@ const webpackConfig = {
 			alias: {
 				'@web': webDir,
 				'@util': path.resolve(__dirname, srcDir, 'util'),
-				'@store': path.resolve(__dirname, webDir, 'stores'),
 				'@typings': path.resolve(__dirname, srcDir, 'types'),
 			},
 		},
@@ -68,7 +66,7 @@ module.exports = {
 
 		config.plugin('html').tap(options => {
 			options[0].title = 'Humans of Legacy';
-			options[0].template = path.resolve(__dirname, srcDir, webDir, 'public', 'index.html');
+			options[0].template = path.resolve(__dirname, 'public', 'index.html');
 			return options;
 		});
 

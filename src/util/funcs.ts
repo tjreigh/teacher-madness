@@ -1,8 +1,20 @@
+import { Poll, Vote } from '@typings';
 import { NowRequest, NowResponse } from '@vercel/node';
+import { db } from './db';
+
+interface _IDObj {
+	id: number;
+}
 
 class InvalidJSONError extends Error {
 	constructor(args?: string) {
 		super(args ?? 'Malformed JSON');
+	}
+}
+
+export class DBInitError extends Error {
+	constructor(args?: string) {
+		super(args ?? 'Database initialization failed');
 	}
 }
 
@@ -61,4 +73,47 @@ export function cleanBody<T>(req: NowRequest): T {
 	} catch (err) {
 		throw new InvalidJSONError('Malformed JSON');
 	}
+}
+
+/**
+ * Fetches the nextId value from the database
+ * @returns The nextId value from the database
+ */
+export async function getNextId(): Promise<number> {
+	if (!db) throw new DBInitError();
+	const idObj = (await db.get('nextId')) as _IDObj;
+	return idObj?.id ?? null;
+}
+
+/**
+ * Increments or resets the nextId value in the database
+ * @param base - If provided, nextId will be reset to this value;
+ * if not provided, existing value will be incremented
+ * @returns The value nextId is set to
+ */
+export async function incNextId(base?: number): Promise<number> {
+	if (!db) throw new DBInitError();
+	// Add nextId to db if doesn't already exist
+	if (!(await getNextId())) {
+		await db.put({ id: 1 }, 'nextId');
+		return 1;
+	}
+
+	const updates = {
+		id: base ?? db.util.increment(),
+	};
+
+	await db.update(updates, 'nextId');
+	const id = await getNextId();
+	return id;
+}
+
+export function isVote(vote: unknown): vote is Vote {
+	const keys = ['id', 'choice'];
+	return vote ? keys.every(key => Object.prototype.hasOwnProperty.call(vote, key)) : false;
+}
+
+export function isPoll(poll: unknown): poll is Poll {
+	const keys = ['id', 'firstChoice', 'secondChoice'];
+	return poll ? keys.every(key => Object.prototype.hasOwnProperty.call(poll, key)) : false;
 }

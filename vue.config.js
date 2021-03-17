@@ -44,7 +44,7 @@ const configureWebpack = isDevEnv
 
 module.exports = {
 	outputDir: path.join(__dirname, 'dist'),
-	//publicPath: path.resolve(__dirname, webDir, 'public'),
+	publicPath: path.resolve(__dirname, 'public'),
 	configureWebpack,
 	chainWebpack: config => {
 		// prettier-ignore

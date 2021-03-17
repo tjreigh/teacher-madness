@@ -1,18 +1,18 @@
 {
-  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-  "extends": ["config:base", ":semanticCommitTypeAll(build)"],
-  "labels": ["dependencies"],
-  "packageRules": [
-    {
-      "updateTypes": ["minor", "patch"],
-      "automerge": true
-    },
-    {
-      "depTypeList": ["devDependencies"],
-      "automerge": true
-    }
-  ],
-  "semanticCommits": "enabled",
+	"$schema": "https://docs.renovatebot.com/renovate-schema.json",
+	"extends": ["config:base", ":semanticCommitTypeAll(build)"],
+	"labels": ["dependencies"],
+	"packageRules": [
+		{
+			"updateTypes": ["minor", "patch"],
+			"automerge": true
+		},
+		{
+			"depTypeList": ["devDependencies"],
+			"automerge": true
+		}
+	],
+	"semanticCommits": "enabled",
 	"rangeStrategy": "update-lockfile",
-	"ignoreDeps": ["postcss", "postcss-loader", "autoprefixer"]
+	"ignoreDeps": ["postcss", "postcss-loader", "autoprefixer", "less-loader"]
 }

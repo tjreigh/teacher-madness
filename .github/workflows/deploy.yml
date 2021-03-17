@@ -9,8 +9,15 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - name: Checkout git repository
+        uses: actions/checkout@v2
       - name: Run transformation script
-        run: yarn transform
+        run: yarn run transform
+      - name: Upload transformed
+        uses: actions/upload-artifact@v2
+        with:
+          name: api
+          path: api
 
   deploy:
     name: Deploy to Vercel

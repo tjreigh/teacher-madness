@@ -28,9 +28,9 @@ jobs:
 
     steps:
       - uses: actions/checkout@v2
-			- uses: actions/download-artifact@v2
-				with:
-					name: api
+      - uses: actions/download-artifact@v2
+        with:
+          name: api
       - uses: amondnet/vercel-action@v20
         with:
           vercel-token: ${{ secrets.VERCEL_TOKEN }}

@@ -31,7 +31,7 @@ import { Vote, Poll } from '@typings';
 
 @Component({
 	components: {
-		Results: () => import('@web/components/Results.vue'),
+		Results: () => import(/* webpackChunkName: "Results" */ '@web/components/Results.vue'),
 	},
 })
 export default class PollView extends Vue {

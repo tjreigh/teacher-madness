@@ -1,17 +1,33 @@
 <template>
 	<div id="app">
-		<Home />
+		<div v-for="poll of polls" :key="poll.id">
+			<PollView :poll="poll" />
+		</div>
 	</div>
 </template>
 
 <script lang="ts">
+import { Poll } from '@typings';
 import { Component, Vue } from 'vue-property-decorator';
-import Home from './pages/Home.vue';
 
 @Component({
-	components: { Home },
+	components: {
+		PollView: () => import(/* webpackChunkName: "PollView" */ '@web/components/PollView.vue'),
+	},
 })
-export default class App extends Vue {}
+export default class Home extends Vue {
+	private polls: Poll[] | null = null;
+
+	created() {
+		this.getPolls();
+	}
+
+	async getPolls() {
+		const res = await fetch('/api/polls');
+		Vue.set(this, 'polls', await res.json());
+		console.log(this.polls);
+	}
+}
 </script>
 
 <style>
@@ -20,19 +36,11 @@ export default class App extends Vue {}
 	-webkit-font-smoothing: antialiased;
 	-moz-osx-font-smoothing: grayscale;
 	text-align: center;
-	color: #2c3e50;
-}
-
-#nav {
-	padding: 30px;
-}
-
-#nav a {
-	font-weight: bold;
-	color: #2c3e50;
-}
-
-#nav a.router-link-exact-active {
-	color: #42b983;
+	display: flex;
+	margin: 0 auto;
+	width: 95%;
+	flex-wrap: wrap;
+	flex-direction: row;
+	justify-content: center;
 }
 </style>

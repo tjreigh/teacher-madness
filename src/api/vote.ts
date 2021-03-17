@@ -1,10 +1,10 @@
 import { Poll, Vote } from '../types';
-import { NowRequest, NowResponse } from '@vercel/node';
+import { VercelRequest, VercelResponse } from '@vercel/node';
 import { cleanBody, db, DBInitError, limit, NowReturn, tryHandleFunc } from '../util';
 
 // Real implementations should acutally be async and remove this
 // eslint-disable-next-line require-await
-const handle = async (req: NowRequest, res: NowResponse): NowReturn => {
+const handle = async (req: VercelRequest, res: VercelResponse): NowReturn => {
 	if (!db) throw new DBInitError();
 
 	const { id, choice } = cleanBody<Vote>(req);

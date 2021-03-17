@@ -1,5 +1,5 @@
 import { Poll, Vote } from '@typings';
-import { NowRequest, NowResponse } from '@vercel/node';
+import { VercelRequest, VercelResponse } from '@vercel/node';
 import { db } from './db';
 
 interface _IDObj {
@@ -18,8 +18,8 @@ export class DBInitError extends Error {
 	}
 }
 
-export type NowReturn = Promise<void | NowResponse>;
-export type NowFunc = (req: NowRequest, res: NowResponse) => NowReturn;
+export type NowReturn = Promise<void | VercelResponse>;
+export type NowFunc = (req: VercelRequest, res: VercelResponse) => NowReturn;
 
 type tryHandleOptions = { shouldAllowCors?: boolean };
 
@@ -34,7 +34,7 @@ export const tryHandleFunc = (
 	handle: NowFunc,
 	method: 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PURGE',
 	options: tryHandleOptions = { shouldAllowCors: false }
-) => async (req: NowRequest, res: NowResponse): NowReturn => {
+) => async (req: VercelRequest, res: VercelResponse): NowReturn => {
 	if (req.method?.toUpperCase() !== method) {
 		return res.status(405).send(`Invalid HTTP method (expected ${method})`);
 	}
@@ -67,7 +67,7 @@ export const tryHandleFunc = (
  * @param req - Vercel serverless function request object
  * @returns Attempted parsed body (possibly an error)
  */
-export function cleanBody<T>(req: NowRequest): T {
+export function cleanBody<T>(req: VercelRequest): T {
 	try {
 		return JSON.parse(req.body) as T;
 	} catch (err) {

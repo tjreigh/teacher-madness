@@ -31,6 +31,7 @@ jobs:
       - uses: actions/download-artifact@v2
         with:
           name: api
+          path: api
       - uses: amondnet/vercel-action@v20
         with:
           vercel-token: ${{ secrets.VERCEL_TOKEN }}

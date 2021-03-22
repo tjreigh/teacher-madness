@@ -1,6 +1,17 @@
 import { Poll, Vote } from '../types';
 import { VercelRequest, VercelResponse } from '@vercel/node';
-import { cleanBody, db, DBInitError, limit, NowReturn, tryHandleFunc } from '../util';
+import {
+	arrayHasIndex,
+	cleanBody,
+	db,
+	DBInitError,
+	hasAllChallongeIds,
+	limit,
+	NowReturn,
+	tryHandleFunc,
+} from '../util';
+import { oneLineTrim } from 'common-tags';
+import fetch from 'node-fetch';
 
 const handle = async (req: VercelRequest, res: VercelResponse): NowReturn => {
 	if (!db) throw new DBInitError();
@@ -13,20 +24,37 @@ const handle = async (req: VercelRequest, res: VercelResponse): NowReturn => {
 
 	if (!poll) return res.status(404).send(`Could not find poll with id ${id}`);
 
-	console.log(poll);
-	if (choice === 0) {
-		poll.firstChoice.votes++;
-	} else if (choice === 1) {
-		poll.secondChoice.votes++;
-	} else {
-		res.status(422).send('Invalid poll choice');
+	if (!arrayHasIndex(poll.entries, choice)) return res.status(422).send('Invalid poll choice');
+
+	poll.entries[choice].votes++;
+
+	await db.update({ entries: poll.entries }, id.toString());
+
+	if (hasAllChallongeIds(poll)) {
+		await challongeUpdate(poll);
 	}
 
-	await db.update(
-		{ firstChoice: poll.firstChoice, secondChoice: poll.secondChoice },
-		id.toString()
-	);
 	return res.json(poll);
 };
+
+async function challongeUpdate(poll: Poll) {
+	const params = {
+		'match[player1_votes]': poll.entries[0].votes.toString(),
+		'match[player2_votes]': poll.entries[1].votes.toString(),
+		'match[scores_csv]': `${poll.entries[0].votes}-${poll.entries[1].votes}`,
+	};
+
+	const url = new URL(oneLineTrim`https://${process.env.CHALLONGE_USER}:${process.env.CHALLONGE_KEY}
+		@api.challonge.com/v1/tournaments/
+		${process.env.CHALLONGE_TOURNAMENT}/matches/${poll.challongeId}.json`);
+
+	url.search = new URLSearchParams(params).toString();
+
+	const res = await fetch(url, {
+		method: 'put',
+	});
+
+	if (!res.ok) return console.error(`Error attempting to update challonge: \n${await res.text()}`);
+}
 
 export default tryHandleFunc(handle, 'POST');

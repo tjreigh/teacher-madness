@@ -108,12 +108,32 @@ export async function incNextId(base?: number): Promise<number> {
 	return id;
 }
 
+export const arrayHasIndex = (array: any[], index: number) =>
+	Array.isArray(array) && Array.prototype.hasOwnProperty.call(array, index);
+
+export function hasAllChallongeIds(poll: Poll): boolean {
+	const objHasId = Object.prototype.hasOwnProperty.call(poll, 'challongeId');
+	const entriesHaveId = poll.entries.every(e =>
+		Object.prototype.hasOwnProperty.call(e, 'challongeId')
+	);
+	return objHasId && entriesHaveId;
+}
+
 export function isVote(vote: unknown): vote is Vote {
 	const keys = ['id', 'choice'];
 	return vote ? keys.every(key => Object.prototype.hasOwnProperty.call(vote, key)) : false;
 }
 
 export function isPoll(poll: unknown): poll is Poll {
-	const keys = ['id', 'firstChoice', 'secondChoice'];
-	return poll ? keys.every(key => Object.prototype.hasOwnProperty.call(poll, key)) : false;
+	if ((poll as Poll).entries == null) return false;
+
+	const keys = ['id', 'entries'];
+	const entryKeys = ['name', 'votes'];
+
+	const isShallowPoll = keys.every(key => Object.prototype.hasOwnProperty.call(poll, key));
+	const isDeepPoll = (poll as Poll).entries.every(e =>
+		entryKeys.every(key => Object.prototype.hasOwnProperty.call(e, key))
+	);
+
+	return isShallowPoll && isDeepPoll;
 }

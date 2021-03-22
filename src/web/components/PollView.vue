@@ -75,8 +75,8 @@ export default class PollView extends Vue {
 }
 </script>
 
-<style lang="less" scoped>
-.base {
+<style lang="scss" scoped>
+%base {
 	background: linear-gradient(180deg, #aa2222 0%, #420101 66%, black 100%);
 	width: 250px;
 	height: 250px;
@@ -87,12 +87,12 @@ export default class PollView extends Vue {
 }
 
 .pollForm {
-	.base;
+	@extend %base;
 	line-height: 80px;
 }
 
 .results {
-	.base;
+	@extend %base;
 	line-height: 30px;
 }
 
@@ -118,5 +118,79 @@ p.votes {
 	font-size: 14pt;
 	color: white;
 	background: none;
+}
+
+@media only screen and (max-width: 768px) {
+	.pollForm {
+		width: 200px;
+		height: 200px;
+		line-height: 60px;
+	}
+
+	.results {
+		width: 200px;
+		height: 200px;
+		line-height: 20px;
+	}
+
+	.subBtn {
+		font-size: 5vw;
+	}
+
+	label {
+		font-size: 5vw;
+	}
+
+	p.votes {
+		font-size: 3.8vw;
+	}
+}
+
+@media (min-width: 768px) and (max-width: 1024px) {
+	.pollForm {
+		width: 250px;
+		height: 210px;
+		line-height: 70px;
+	}
+
+	.results {
+		width: 250px;
+		height: 210px;
+		line-height: 40px;
+	}
+
+	.subBtn {
+		font-size: 3vw;
+	}
+
+	p.votes {
+		font-size: 12pt;
+	}
+}
+
+@media (min-width: 768px) and (max-width: 1024px) and (orientation: landscape) {
+	.pollForm {
+		width: 25vw;
+		height: 20vh;
+		margin: 1.5vw;
+		padding: 1.5vw;
+		line-height: 6vh;
+	}
+
+	.results {
+		width: 20vw;
+		height: 14vh;
+		padding: 0 4vw 10.6vh;
+		font-size: 1.5vw;
+		line-height: 2.6vh;
+	}
+
+	.subBtn {
+		font-size: 2vw;
+	}
+
+	p.votes {
+		font-size: 1.5vw;
+	}
 }
 </style>

@@ -65,7 +65,7 @@ module.exports = {
 					.end()
 
 		config.plugin('html').tap(options => {
-			options[0].title = 'Humans of Legacy';
+			options[0].title = 'Teacher Madness';
 			options[0].template = path.resolve(__dirname, 'public', 'index.html');
 			return options;
 		});
@@ -88,6 +88,9 @@ module.exports = {
 		loaderOptions: {
 			postcss: {
 				plugins: [require('autoprefixer')],
+			},
+			scss: {
+				additionalData: `@import '@web/globals.scss';`,
 			},
 		},
 	},

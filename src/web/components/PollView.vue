@@ -1,25 +1,24 @@
 <template>
 	<div class="poll">
-		<div class="pollForm" v-if="needsVote">
+		<div class="pollForm" v-if="needsVote && loading == false">
 			<form @submit="handleVote" method="post">
 				<input type="radio" v-model.number="choice" value="0" /><label>{{
-					this.poll.firstChoice.name
+					this.poll.entries[0].name
 				}}</label>
 				<br />
 				<input type="radio" v-model.number="choice" value="1" /><label>{{
-					this.poll.secondChoice.name
+					this.poll.entries[1].name
 				}}</label>
 				<br />
 				<input type="submit" value="Vote" class="subBtn" />
 			</form>
 		</div>
+		<div class="loading" v-else-if="loading == true">Loading...</div>
 		<div class="results" v-else>
-			<p class="votes">{{ this.poll.firstChoice.name }}: {{ this.poll.firstChoice.votes }} votes</p>
+			<p class="votes">{{ this.poll.entries[0].name }}: {{ this.poll.entries[0].votes }} votes</p>
 			<Results :value="results[0]" />
 			<hr />
-			<p class="votes">
-				{{ this.poll.secondChoice.name }}: {{ this.poll.secondChoice.votes }} votes
-			</p>
+			<p class="votes">{{ this.poll.entries[1].name }}: {{ this.poll.entries[1].votes }} votes</p>
 			<Results :value="results[1]" />
 		</div>
 	</div>
@@ -37,12 +36,21 @@ import { Vote, Poll } from '@typings';
 export default class PollView extends Vue {
 	@Prop({ required: true, type: Object }) poll!: Poll;
 	private choice: number | null = null;
-	private results: [number, number] = [0, 0];
+	private results = [0, 0];
 	private needsVote = true;
+	private loading = false;
 
 	async handleVote(e: Event) {
 		e.preventDefault();
 
+		this.loading = true;
+
+		await this.voteReq();
+
+		this.loading = false;
+	}
+
+	async voteReq() {
 		if (this.choice == null) return alert('Please select someone to vote for');
 
 		const vote: Vote = {
@@ -66,11 +74,8 @@ export default class PollView extends Vue {
 	}
 
 	calcProgress(results: Poll) {
-		const total = results.firstChoice.votes + results.secondChoice.votes;
-		const v1 = Math.round((results.firstChoice.votes / total) * 100);
-		const v2 = Math.round((results.secondChoice.votes / total) * 100);
-
-		this.results = [v1, v2];
+		const total = results.entries.reduce((acc, it) => acc + it.votes, 0);
+		this.results = results.entries.map(e => Math.round((e.votes / total) * 100));
 	}
 }
 </script>
@@ -94,6 +99,10 @@ export default class PollView extends Vue {
 .results {
 	@extend %base;
 	line-height: 30px;
+}
+
+.loading {
+	@extend %base;
 }
 
 .subBtn {

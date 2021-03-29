@@ -1,5 +1,9 @@
-import { Poll, Vote } from '../types';
 import { VercelRequest, VercelResponse } from '@vercel/node';
+import { oneLineTrim } from 'common-tags';
+import { serialize } from 'cookie';
+import { addSeconds } from 'date-fns';
+import fetch from 'node-fetch';
+import { Poll, Vote } from '../types';
 import {
 	arrayHasIndex,
 	cleanBody,
@@ -10,10 +14,6 @@ import {
 	NowReturn,
 	tryHandleFunc,
 } from '../util';
-import { oneLineTrim } from 'common-tags';
-import { serialize } from 'cookie';
-import { addSeconds } from 'date-fns';
-import fetch from 'node-fetch';
 
 const handle = async (req: VercelRequest, res: VercelResponse): NowReturn => {
 	if (!db || !limit) throw new DBInitError(); // This enables safe non-null assertions

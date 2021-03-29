@@ -1,6 +1,6 @@
 import Vue from 'vue';
-import App from './App.vue';
 import { VueReCaptcha } from 'vue-recaptcha-v3';
+import App from './App.vue';
 
 Vue.config.productionTip = false;
 Vue.config.devtools = true;

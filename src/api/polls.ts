@@ -1,5 +1,5 @@
-import { Poll } from '../types';
 import { VercelRequest, VercelResponse } from '@vercel/node';
+import { Poll } from '../types';
 import { db, DBInitError, isPoll, NowReturn, tryHandleFunc } from '../util';
 
 const handle = async (req: VercelRequest, res: VercelResponse): NowReturn => {

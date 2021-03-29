@@ -1,7 +1,7 @@
-import fetch from 'node-fetch';
-import * as dotenv from 'dotenv';
-import { ChallongeTournament } from '../types';
 import { oneLineTrim } from 'common-tags';
+import * as dotenv from 'dotenv';
+import fetch from 'node-fetch';
+import { ChallongeTournament } from '../types';
 dotenv.config();
 
 export async function challongeRequest(apiUsername: string, apiKey: string, tournamentId: string) {

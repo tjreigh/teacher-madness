@@ -1,6 +1,6 @@
 import { VercelRequest, VercelResponse } from '@vercel/node';
-import { cleanBody, NowReturn, tryHandleFunc } from '../util';
 import fetch from 'node-fetch';
+import { cleanBody, NowReturn, tryHandleFunc } from '../util';
 
 interface GRecaptchaResult {
 	success: boolean;

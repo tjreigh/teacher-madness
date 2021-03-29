@@ -57,22 +57,26 @@ export default class PollView extends Vue {
 	}
 
 	fitText() {
-		const { isPhone, isTablet, isLarge } = this.mediaMatches();
-		const phone = isPhone ? 18 : null;
-		const tablet = isTablet ? 19 : null;
+		const { isPhone, isTabletP, isTabletL, isLarge } = this.mediaMatches();
+		const phone = isPhone ? 17 : null;
+		const tabletP = isTabletP ? 18 : null;
+		const tabletL = isTabletL ? 19 : null;
 		const large = isLarge ? 22 : null;
 
-		fitty('.textfit', { minSize: 16, maxSize: phone || tablet || large || 20 });
+		fitty('.textfit', { minSize: 16, maxSize: phone || tabletP || tabletL || large || 20 });
 	}
 
 	private mediaMatches() {
 		const isPhone = window.matchMedia('only screen and (max-width: 760px)').matches;
-		const isTablet = window.matchMedia(
-			'only screen and (min-device-width : 768px) and (max-device-width : 1024px)'
+		const isTabletP = window.matchMedia(
+			'only screen and (min-device-width : 768px) and (max-device-width : 1024px) and (orientation : portrait)'
+		).matches;
+		const isTabletL = window.matchMedia(
+			'only screen and (min-device-width : 768px) and (max-device-width : 1024px) and (orientation : landscape)'
 		).matches;
 		const isLarge = window.matchMedia('only screen  and (min-width : 1824px)').matches;
 
-		return { isPhone, isTablet, isLarge };
+		return { isPhone, isTabletP, isTabletL, isLarge };
 	}
 
 	async handleVote() {
@@ -152,6 +156,9 @@ export default class PollView extends Vue {
 
 .loading {
 	@extend %base;
+	display: flex;
+	justify-content: center;
+	align-items: center;
 }
 
 .subBtn {
@@ -186,6 +193,11 @@ p.votes {
 		line-height: 60px;
 	}
 
+	.loading {
+		width: 230px;
+		height: 200px;
+	}
+
 	.results {
 		width: 230px;
 		height: 200px;
@@ -204,32 +216,15 @@ p.votes {
 		line-height: 70px;
 	}
 
+	.loading {
+		width: 250px;
+		height: 210px;
+	}
+
 	.results {
 		width: 250px;
 		height: 210px;
 		line-height: 40px;
-	}
-
-	.subBtn {
-		font-size: 20pt;
-	}
-}
-
-@media (min-width: 768px) and (max-width: 1024px) and (orientation: landscape) {
-	.pollForm {
-		width: 25vw;
-		height: 20vh;
-		margin: 1.5vw;
-		padding: 1.5vw;
-		line-height: 6vh;
-	}
-
-	.results {
-		width: 20vw;
-		height: 14vh;
-		padding: 0 4vw 10.6vh;
-		font-size: 1.5vw;
-		line-height: 2.6vh;
 	}
 
 	.subBtn {

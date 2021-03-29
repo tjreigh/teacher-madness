@@ -120,6 +120,8 @@ export default class PollView extends Vue {
 			this.needsVote = false;
 			this.calcResults((await res.json()) as Poll);
 		} else {
+			if (res.status === 429)
+				return alert('Ratelimited (you can only vote every 30 seconds per match)');
 			alert(`Error when attempting to vote: \n${await res.text()}`);
 		}
 	}

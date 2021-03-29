@@ -64,29 +64,28 @@ export const tryHandleFunc = (
 	}
 };
 
-export async function getUserId(req: VercelRequest, res: VercelResponse) {
+export async function getUserId(req: VercelRequest) {
 	if (!users) throw new DBInitError();
 
 	let userId = getCookie(req, 'user-id');
 	let putDb = '';
+	let idCookie = '';
 
 	if (!userId) {
 		userId = uuidv4();
 
 		putDb = (((await users.put(userId)) as unknown) as { value: string }).value;
-		const idCookie = serialize('user-id', userId, { httpOnly: true });
-		res.setHeader('Set-Cookie', [idCookie]);
+		idCookie = serialize('user-id', userId, { httpOnly: true });
 	}
 
 	const dbId = putDb
 		? userId
 		: ((await (await users.fetch({ value: userId }))[Symbol.asyncIterator]().next())
 				.value as Array<{ value: string }>)[0].value;
-	//console.log((await (await users.fetch({ value: userId }))[Symbol.asyncIterator]().next()).value);
 	console.log(`userId: ${userId}, putDb: ${putDb}, dbId: ${dbId}`);
 
-	if (dbId !== userId) res.status(401).send('User ID is not recognized');
-	return userId;
+	if (dbId !== userId) throw new Error('User ID not recognized or could not be set');
+	return { userId, idCookie };
 }
 
 export function getCookie(req: VercelRequest, name: string) {

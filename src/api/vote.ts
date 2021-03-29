@@ -22,7 +22,7 @@ const handle = async (req: VercelRequest, res: VercelResponse): NowReturn => {
 
 	const { id, choice } = cleanBody<Vote>(req);
 
-	const userId = await getUserId(req, res);
+	const { userId, idCookie } = await getUserId(req, res);
 	const { isCookieLimited, isDbLimited, limitedPolls } = await getRateLimit(req, id, userId);
 	if (isCookieLimited || isDbLimited) return res.status(429).send('Ratelimited');
 
@@ -55,7 +55,7 @@ const handle = async (req: VercelRequest, res: VercelResponse): NowReturn => {
 	const expires = addSeconds(new Date(Date.now()), 30);
 	const cookie = serialize(`vote-limit-${id}`, 'true', { expires, httpOnly: true });
 	console.log(cookie);
-	res.setHeader('Set-Cookie', [cookie]);
+	res.setHeader('Set-Cookie', [cookie, idCookie]);
 
 	return res.json(poll);
 };

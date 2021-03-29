@@ -34,7 +34,7 @@ enum GRecaptchaError {
 const handle = async (req: VercelRequest, res: VercelResponse): NowReturn => {
 	if (!verified) throw new DBInitError();
 
-	const userId = await getUserId(req, res);
+	const { userId, idCookie } = await getUserId(req, res);
 
 	const verifiedCookie = getCookie(req, 'captcha-verified');
 
@@ -80,7 +80,7 @@ const handle = async (req: VercelRequest, res: VercelResponse): NowReturn => {
 
 	const expires = addHours(new Date(Date.now()), 2);
 	const cookie = serialize('captcha-verified', token, { expires, httpOnly: true });
-	res.setHeader('Set-Cookie', [cookie]);
+	res.setHeader('Set-Cookie', [cookie, idCookie]);
 
 	return res.status(200).send('reCAPTCHA passed');
 };

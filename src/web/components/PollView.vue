@@ -1,32 +1,43 @@
 <template>
 	<div class="poll">
 		<div class="pollForm" v-if="needsVote && loading == false">
-			<form @submit="handleVote" method="post">
-				<input type="radio" v-model.number="choice" value="0" /><label>{{
+			<form @submit.prevent="handleVote" method="post">
+				<input
+					type="radio"
+					:id="`${this.poll.id}-choice0`"
+					v-model.number="choice"
+					value="0"
+				/><label :for="`${this.poll.id}-choice0`" class="textfit">{{
 					this.poll.entries[0].name
 				}}</label>
 				<br />
-				<input type="radio" v-model.number="choice" value="1" /><label>{{
+				<input
+					type="radio"
+					:id="`${this.poll.id}-choice1`"
+					v-model.number="choice"
+					value="1"
+				/><label :for="`${this.poll.id}-choice1`" class="textfit">{{
 					this.poll.entries[1].name
 				}}</label>
 				<br />
-				<input type="submit" value="Vote" class="subBtn" />
+				<input type="submit" value="Vote" class="subBtn fittext" />
 			</form>
 		</div>
-		<div class="loading" v-else-if="loading == true">Loading...</div>
+		<div class="loading" v-else-if="loading == true"><p class="textfit">Loading...</p></div>
 		<div class="results" v-else>
-			<p class="votes">{{ this.poll.entries[0].name }}: {{ this.poll.entries[0].votes }} votes</p>
-			<Results :value="results[0]" />
+			<p class="votes textfit">{{ this.poll.entries[0].name }}: {{ this.results[0][0] }} votes</p>
+			<Results :value="results[1][0]" />
 			<hr />
-			<p class="votes">{{ this.poll.entries[1].name }}: {{ this.poll.entries[1].votes }} votes</p>
-			<Results :value="results[1]" />
+			<p class="votes textfit">{{ this.poll.entries[1].name }}: {{ this.results[0][1] }} votes</p>
+			<Results :value="results[1][1]" />
 		</div>
 	</div>
 </template>
 
 <script lang="ts">
-import { Vue, Component, Prop } from 'vue-property-decorator';
-import { Vote, Poll } from '@typings';
+import { Poll, Vote } from '@typings';
+import fitty from 'fitty';
+import { Component, Prop, Vue } from 'vue-property-decorator';
 
 @Component({
 	components: {
@@ -36,21 +47,57 @@ import { Vote, Poll } from '@typings';
 export default class PollView extends Vue {
 	@Prop({ required: true, type: Object }) poll!: Poll;
 	private choice: number | null = null;
-	private results = [0, 0];
+	private results: number[][] = [];
 	private needsVote = true;
 	private loading = false;
 
-	async handleVote(e: Event) {
-		e.preventDefault();
+	mounted() {
+		window.addEventListener('resize', this.fitText);
+		this.fitText();
+	}
 
+	fitText() {
+		const { isPhone, isTablet, isLarge } = this.mediaMatches();
+		const phone = isPhone ? 18 : null;
+		const tablet = isTablet ? 19 : null;
+		const large = isLarge ? 22 : null;
+
+		fitty('.textfit', { minSize: 16, maxSize: phone || tablet || large || 20 });
+	}
+
+	private mediaMatches() {
+		const isPhone = window.matchMedia('only screen and (max-width: 760px)').matches;
+		const isTablet = window.matchMedia(
+			'only screen and (min-device-width : 768px) and (max-device-width : 1024px)'
+		).matches;
+		const isLarge = window.matchMedia('only screen  and (min-width : 1824px)').matches;
+
+		return { isPhone, isTablet, isLarge };
+	}
+
+	async handleVote() {
 		this.loading = true;
 
-		await this.voteReq();
+		await this.$recaptchaLoaded();
+
+		const response = await this.$recaptcha('submit');
+
+		const res = await fetch('/api/verify', {
+			method: 'POST',
+			body: JSON.stringify({ response }),
+		});
+
+		console.log(response);
+
+		if (!res.ok) {
+			if (res.status === 405) alert('reCAPTCHA failed');
+			else return alert(`Erorr when attempting to verify reCAPTCHA: \n${await res.text()}`);
+		} else if (res.ok) await this.voteReq();
 
 		this.loading = false;
 	}
 
-	async voteReq() {
+	private async voteReq() {
 		if (this.choice == null) return alert('Please select someone to vote for');
 
 		const vote: Vote = {
@@ -67,15 +114,17 @@ export default class PollView extends Vue {
 
 		if (res.ok) {
 			this.needsVote = false;
-			this.calcProgress((await res.json()) as Poll);
+			this.calcResults((await res.json()) as Poll);
 		} else {
 			alert(`Error when attempting to vote: \n${await res.text()}`);
 		}
 	}
 
-	calcProgress(results: Poll) {
+	private calcResults(results: Poll) {
+		this.results[0] = results.entries.map(e => e.votes);
+
 		const total = results.entries.reduce((acc, it) => acc + it.votes, 0);
-		this.results = results.entries.map(e => Math.round((e.votes / total) * 100));
+		this.results[1] = results.entries.map(e => Math.round((e.votes / total) * 100));
 	}
 }
 </script>
@@ -83,7 +132,7 @@ export default class PollView extends Vue {
 <style lang="scss" scoped>
 %base {
 	background: linear-gradient(180deg, #aa2222 0%, #420101 66%, black 100%);
-	width: 250px;
+	width: 275px;
 	height: 250px;
 	margin: 10px;
 	padding: 30px;
@@ -106,7 +155,7 @@ export default class PollView extends Vue {
 }
 
 .subBtn {
-	font-size: 1.3vw;
+	font-size: 22pt;
 	color: #ad1f1f;
 	font-weight: bold;
 }
@@ -117,6 +166,7 @@ label {
 
 hr {
 	border: 0;
+	height: 25px;
 }
 
 p.votes {
@@ -131,27 +181,19 @@ p.votes {
 
 @media only screen and (max-width: 768px) {
 	.pollForm {
-		width: 200px;
+		width: 230px;
 		height: 200px;
 		line-height: 60px;
 	}
 
 	.results {
-		width: 200px;
+		width: 230px;
 		height: 200px;
 		line-height: 20px;
 	}
 
 	.subBtn {
-		font-size: 5vw;
-	}
-
-	label {
-		font-size: 5vw;
-	}
-
-	p.votes {
-		font-size: 3.8vw;
+		font-size: 18pt;
 	}
 }
 
@@ -169,11 +211,7 @@ p.votes {
 	}
 
 	.subBtn {
-		font-size: 3vw;
-	}
-
-	p.votes {
-		font-size: 12pt;
+		font-size: 20pt;
 	}
 }
 
@@ -195,11 +233,7 @@ p.votes {
 	}
 
 	.subBtn {
-		font-size: 2vw;
-	}
-
-	p.votes {
-		font-size: 1.5vw;
+		font-size: 20pt;
 	}
 }
 </style>

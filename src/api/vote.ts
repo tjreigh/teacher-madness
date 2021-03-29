@@ -10,6 +10,7 @@ import {
 	db,
 	DBInitError,
 	getForwardedHeader,
+	getUserId,
 	hasAllChallongeIds,
 	limit,
 	NowReturn,
@@ -21,7 +22,8 @@ const handle = async (req: VercelRequest, res: VercelResponse): NowReturn => {
 
 	const { id, choice } = cleanBody<Vote>(req);
 
-	const { isCookieLimited, isDbLimited, forwarded } = await getRateLimit(req, id);
+	const userId = await getUserId(req, res);
+	const { isCookieLimited, isDbLimited, limitedPolls } = await getRateLimit(req, id, userId);
 	if (isCookieLimited || isDbLimited) return res.status(429).send('Ratelimited');
 
 	// `fetch` returns `AsyncIterable` so `Symbol.asyncIterator` must be explicitly called
@@ -41,7 +43,14 @@ const handle = async (req: VercelRequest, res: VercelResponse): NowReturn => {
 		await challongeUpdate(poll);
 	}
 
-	await limit.update({ polls: { [id]: Date.now() } }, forwarded);
+	await limit.update(
+		{
+			polls: Object.assign(limitedPolls, { [id]: Date.now() }),
+			ip: getForwardedHeader(req),
+			count: limit.util.increment(),
+		},
+		userId
+	);
 
 	const expires = addSeconds(new Date(Date.now()), 30);
 	const cookie = serialize(`vote-limit-${id}`, 'true', { expires, httpOnly: true });
@@ -51,7 +60,7 @@ const handle = async (req: VercelRequest, res: VercelResponse): NowReturn => {
 	return res.json(poll);
 };
 
-async function getRateLimit(req: VercelRequest, id: number) {
+async function getRateLimit(req: VercelRequest, id: number, userId: string) {
 	const rawCookies = req.headers.cookie?.split('; ');
 	console.log('rawCookies', rawCookies);
 
@@ -63,18 +72,19 @@ async function getRateLimit(req: VercelRequest, id: number) {
 	});
 	const isCookieLimited = limitedCookie != null; // Value doesn't matter, only definition
 
-	const forwarded = getForwardedHeader(req);
-
 	// Non-null assertion is safe becuase of check at beginning of `handle`
-	const dbLimit = (await limit!.get(forwarded)) as { polls: Record<number, number> };
-	console.log(dbLimit.polls[id]);
+	const dbLimit =
+		((await limit!.get(userId)) as { polls: Record<number, number> }) ??
+		(await limit!.put({ polls: {}, ip: getForwardedHeader(req) }, userId));
 
 	// Limit if stored date is less than 30 seconds from now
-	const isDbLimited = Math.round((Date.now() - dbLimit.polls[id]) / 1000) < 30 ? true : false;
+	const isDbLimited =
+		dbLimit.polls && Math.round((Date.now() - dbLimit.polls[id]) / 1000) < 30 ? true : false;
 
 	console.log(`isCookieLimited: ${isCookieLimited} | isDbLimited: ${isDbLimited}`);
 
-	return { isCookieLimited, isDbLimited, forwarded };
+	const limitedPolls = dbLimit.polls;
+	return { isCookieLimited, isDbLimited, limitedPolls };
 }
 
 async function challongeUpdate(poll: Poll) {

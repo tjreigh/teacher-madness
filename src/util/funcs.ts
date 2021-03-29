@@ -1,6 +1,8 @@
 import { Poll, Vote } from '@typings';
 import { VercelRequest, VercelResponse } from '@vercel/node';
-import { db } from './db';
+import { db, users } from './db';
+import { v4 as uuidv4 } from 'uuid';
+import { serialize } from 'cookie';
 
 interface _IDObj {
 	id: number;
@@ -61,6 +63,39 @@ export const tryHandleFunc = (
 		}
 	}
 };
+
+export async function getUserId(req: VercelRequest, res: VercelResponse) {
+	if (!users) throw new DBInitError();
+
+	let userId = getCookie(req, 'user-id');
+	let putDb = '';
+
+	if (!userId) {
+		userId = uuidv4();
+
+		putDb = (((await users.put(userId)) as unknown) as { value: string }).value;
+		const idCookie = serialize('user-id', userId, { httpOnly: true });
+		res.setHeader('Set-Cookie', [idCookie]);
+	}
+
+	const dbId = putDb
+		? userId
+		: ((await (await users.fetch({ value: userId }))[Symbol.asyncIterator]().next())
+				.value as Array<{ value: string }>)[0].value;
+	//console.log((await (await users.fetch({ value: userId }))[Symbol.asyncIterator]().next()).value);
+	console.log(`userId: ${userId}, putDb: ${putDb}, dbId: ${dbId}`);
+
+	if (dbId !== userId) res.status(401).send('User ID is not recognized');
+	return userId;
+}
+
+export function getCookie(req: VercelRequest, name: string) {
+	const rawCookies = req.headers.cookie?.split('; ');
+	const present = rawCookies?.find(c => c.split('=')[0] === name);
+	const value = present?.split('=')[1] as string;
+
+	return present != null ? value : null;
+}
 
 export function getForwardedHeader(req: VercelRequest) {
 	// rawHeaders are stored in one array with both keys and values

@@ -6,7 +6,8 @@ import { v4 as uuidv4 } from 'uuid';
 import {
 	cleanBody,
 	DBInitError,
-	getForwardedHeader,
+	getCookie,
+	getUserId,
 	NowReturn,
 	tryHandleFunc,
 	verified,
@@ -33,17 +34,12 @@ enum GRecaptchaError {
 const handle = async (req: VercelRequest, res: VercelResponse): NowReturn => {
 	if (!verified) throw new DBInitError();
 
-	const rawCookies = req.headers.cookie?.split('; ');
-	const verifiedCookie = rawCookies
-		?.find(c => {
-			const split = c.split('=');
-			if (split[0] === 'captcha-verified') return split;
-			return undefined;
-		})
-		?.split('=')[1];
+	const userId = await getUserId(req, res);
+
+	const verifiedCookie = getCookie(req, 'captcha-verified');
 
 	if (verifiedCookie != null) {
-		const dbVerified = ((await verified.get(getForwardedHeader(req))) as { value: string }).value;
+		const dbVerified = ((await verified.get(userId)) as { value: string })?.value;
 		console.log(dbVerified, verifiedCookie);
 		if (dbVerified && verifiedCookie === dbVerified)
 			return res.status(200).send('Already verified');
@@ -80,7 +76,7 @@ const handle = async (req: VercelRequest, res: VercelResponse): NowReturn => {
 	}
 
 	const token = uuidv4();
-	await verified.put(token, getForwardedHeader(req));
+	await verified.put(token, userId);
 
 	const expires = addHours(new Date(Date.now()), 2);
 	const cookie = serialize('captcha-verified', token, { expires, httpOnly: true });

@@ -9,6 +9,7 @@ import {
 	cleanBody,
 	db,
 	DBInitError,
+	getForwardedHeader,
 	hasAllChallongeIds,
 	limit,
 	NowReturn,
@@ -57,15 +58,12 @@ async function getRateLimit(req: VercelRequest, id: number) {
 	// Check if cookie with poll id is present
 	const limitedCookie = rawCookies?.find(c => {
 		const split = c.split('=');
-		if (split[0] === `vote-limit-${id}`) return split[1];
+		if (split[0] === `vote-limit-${id}`) return split;
 		return undefined;
 	});
 	const isCookieLimited = limitedCookie != null; // Value doesn't matter, only definition
 
-	// rawHeaders are stored in one array with both keys and values
-	// See https://nodejs.org/api/http.html#http_class_http_incomingmessage
-	const forwardedIdx = req.rawHeaders.findIndex(h => h.toLowerCase() === 'x-forwarded-for');
-	const forwarded = req.rawHeaders[forwardedIdx + 1];
+	const forwarded = getForwardedHeader(req);
 
 	// Non-null assertion is safe becuase of check at beginning of `handle`
 	const dbLimit = (await limit!.get(forwarded)) as { polls: Record<number, number> };

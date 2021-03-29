@@ -62,6 +62,13 @@ export const tryHandleFunc = (
 	}
 };
 
+export function getForwardedHeader(req: VercelRequest) {
+	// rawHeaders are stored in one array with both keys and values
+	// See https://nodejs.org/api/http.html#http_class_http_incomingmessage
+	const forwardedIdx = req.rawHeaders.findIndex(h => h.toLowerCase() === 'x-forwarded-for');
+	return req.rawHeaders[forwardedIdx + 1];
+}
+
 /**
  * Attempt to parse the request body of a Vercel serverless function
  * @param req - Vercel serverless function request object

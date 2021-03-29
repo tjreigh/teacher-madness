@@ -34,7 +34,7 @@ enum GRecaptchaError {
 const handle = async (req: VercelRequest, res: VercelResponse): NowReturn => {
 	if (!verified) throw new DBInitError();
 
-	const { userId, idCookie } = await getUserId(req, res);
+	const { userId, idCookie } = await getUserId(req);
 
 	const verifiedCookie = getCookie(req, 'captcha-verified');
 

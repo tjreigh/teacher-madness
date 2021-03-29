@@ -14,5 +14,5 @@
 	],
 	"semanticCommits": "enabled",
 	"rangeStrategy": "update-lockfile",
-	"ignoreDeps": ["postcss", "postcss-loader", "autoprefixer", "sass-loader"]
+	"ignoreDeps": ["postcss", "postcss-loader", "autoprefixer", "sass-loader", "vue-recaptcha-v3"]
 }

@@ -1,5 +1,9 @@
-import { Poll, Vote } from '../types';
 import { VercelRequest, VercelResponse } from '@vercel/node';
+import { oneLineTrim } from 'common-tags';
+import { serialize } from 'cookie';
+import { addSeconds } from 'date-fns';
+import fetch from 'node-fetch';
+import { Poll, Vote } from '../types';
 import {
 	arrayHasIndex,
 	cleanBody,
@@ -10,14 +14,16 @@ import {
 	NowReturn,
 	tryHandleFunc,
 } from '../util';
-import { oneLineTrim } from 'common-tags';
-import fetch from 'node-fetch';
 
 const handle = async (req: VercelRequest, res: VercelResponse): NowReturn => {
-	if (!db) throw new DBInitError();
+	if (!db || !limit) throw new DBInitError(); // This enables safe non-null assertions
 
 	const { id, choice } = cleanBody<Vote>(req);
 
+	const { isCookieLimited, isDbLimited, forwarded } = await getRateLimit(req, id);
+	if (isCookieLimited || isDbLimited) return res.status(429).send('Ratelimited');
+
+	// `fetch` returns `AsyncIterable` so `Symbol.asyncIterator` must be explicitly called
 	const poll: Poll | undefined = (
 		await (await db.fetch({ id }, 1, 1))[Symbol.asyncIterator]().next()
 	).value[0];
@@ -34,8 +40,44 @@ const handle = async (req: VercelRequest, res: VercelResponse): NowReturn => {
 		await challongeUpdate(poll);
 	}
 
+	await limit.update({ polls: { [id]: Date.now() } }, forwarded);
+
+	const expires = addSeconds(new Date(Date.now()), 30);
+	const cookie = serialize(`vote-limit-${id}`, 'true', { expires, httpOnly: true });
+	console.log(cookie);
+	res.setHeader('Set-Cookie', [cookie]);
+
 	return res.json(poll);
 };
+
+async function getRateLimit(req: VercelRequest, id: number) {
+	const rawCookies = req.headers.cookie?.split('; ');
+	console.log('rawCookies', rawCookies);
+
+	// Check if cookie with poll id is present
+	const limitedCookie = rawCookies?.find(c => {
+		const split = c.split('=');
+		if (split[0] === `vote-limit-${id}`) return split[1];
+		return undefined;
+	});
+	const isCookieLimited = limitedCookie != null; // Value doesn't matter, only definition
+
+	// rawHeaders are stored in one array with both keys and values
+	// See https://nodejs.org/api/http.html#http_class_http_incomingmessage
+	const forwardedIdx = req.rawHeaders.findIndex(h => h.toLowerCase() === 'x-forwarded-for');
+	const forwarded = req.rawHeaders[forwardedIdx + 1];
+
+	// Non-null assertion is safe becuase of check at beginning of `handle`
+	const dbLimit = (await limit!.get(forwarded)) as { polls: Record<number, number> };
+	console.log(dbLimit.polls[id]);
+
+	// Limit if stored date is less than 30 seconds from now
+	const isDbLimited = Math.round((Date.now() - dbLimit.polls[id]) / 1000) < 30 ? true : false;
+
+	console.log(`isCookieLimited: ${isCookieLimited} | isDbLimited: ${isDbLimited}`);
+
+	return { isCookieLimited, isDbLimited, forwarded };
+}
 
 async function challongeUpdate(poll: Poll) {
 	const params = {

@@ -1,11 +1,13 @@
-import fetch from 'node-fetch';
+import { oneLineTrim } from 'common-tags';
 import * as dotenv from 'dotenv';
+import fetch from 'node-fetch';
 import { ChallongeTournament } from '../types';
 dotenv.config();
 
 export async function challongeRequest(apiUsername: string, apiKey: string, tournamentId: string) {
 	const res = await fetch(
-		`https://${apiUsername}:${apiKey}@api.challonge.com/v1/tournaments/${tournamentId}.json?include_participants=1&include_matches=1`
+		oneLineTrim`https://${apiUsername}:${apiKey}@api.challonge.com/v1/tournaments/
+		${tournamentId}.json?include_participants=1&include_matches=1`
 	);
 	if (!res.ok) return console.error(`Error when requesting tournament data: \n${await res.text()}`);
 
@@ -27,8 +29,6 @@ export async function challongeRequest(apiUsername: string, apiKey: string, tour
 		})
 		.filter(m => m != null);
 
-	console.log(cleanMatches?.length);
-
 	const polls = cleanMatches?.map(m => {
 		return {
 			entries: [
@@ -40,6 +40,7 @@ export async function challongeRequest(apiUsername: string, apiKey: string, tour
 	});
 
 	console.log(JSON.stringify(polls, null, 4));
+	console.log(polls?.length);
 }
 
 challongeRequest(

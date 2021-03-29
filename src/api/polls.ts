@@ -1,5 +1,5 @@
-import { Poll } from '../types';
 import { VercelRequest, VercelResponse } from '@vercel/node';
+import { Poll } from '../types';
 import { db, DBInitError, isPoll, NowReturn, tryHandleFunc } from '../util';
 
 const handle = async (req: VercelRequest, res: VercelResponse): NowReturn => {
@@ -7,8 +7,12 @@ const handle = async (req: VercelRequest, res: VercelResponse): NowReturn => {
 
 	const polls: Poll[] | undefined = (await (await db.fetch())[Symbol.asyncIterator]().next()).value;
 
-	console.log(polls);
-	return res.json(polls?.flat().filter(poll => isPoll(poll)));
+	const sorted = polls
+		?.flat()
+		.filter(it => isPoll(it))
+		.sort((a, b) => a.id - b.id);
+
+	return res.json(sorted);
 };
 
 export default tryHandleFunc(handle, 'GET');

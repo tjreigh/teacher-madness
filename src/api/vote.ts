@@ -22,7 +22,7 @@ const handle = async (req: VercelRequest, res: VercelResponse): NowReturn => {
 
 	const { id, choice } = cleanBody<Vote>(req);
 
-	const { userId, idCookie } = await getUserId(req, res);
+	const { userId, idCookie } = await getUserId(req);
 	const { isCookieLimited, isDbLimited, limitedPolls } = await getRateLimit(req, id, userId);
 	if (isCookieLimited || isDbLimited) return res.status(429).send('Ratelimited');
 

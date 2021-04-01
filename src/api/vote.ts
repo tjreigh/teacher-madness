@@ -9,16 +9,17 @@ import {
 	cleanBody,
 	db,
 	DBInitError,
+	getCookie,
 	getForwardedHeader,
 	getUserId,
 	hasAllChallongeIds,
-	limit,
 	NowReturn,
+	redisClient,
 	tryHandleFunc,
 } from '../util';
 
 const handle = async (req: VercelRequest, res: VercelResponse): NowReturn => {
-	if (!db || !limit) throw new DBInitError(); // This enables safe non-null assertions
+	if (!db) throw new DBInitError(); // This enables safe non-null assertions
 
 	const { id, choice } = cleanBody<Vote>(req);
 
@@ -26,10 +27,12 @@ const handle = async (req: VercelRequest, res: VercelResponse): NowReturn => {
 	const { isCookieLimited, isDbLimited, limitedPolls } = await getRateLimit(req, id, userId);
 	if (isCookieLimited || isDbLimited) return res.status(429).send('Ratelimited');
 
+	const verifiedCookie = getCookie(req, 'captcha-verified');
+	const dbVerified = await redisClient.hget('verified', userId);
+	if (verifiedCookie !== dbVerified) return res.status(403).send('Captcha token not recognized');
+
 	// `fetch` returns `AsyncIterable` so `Symbol.asyncIterator` must be explicitly called
-	const poll: Poll | undefined = (
-		await (await db.fetch({ id }, 1, 1))[Symbol.asyncIterator]().next()
-	).value[0];
+	const poll: Poll = (await db.get(id.toString())) as Poll;
 
 	if (!poll) return res.status(404).send(`Could not find poll with id ${id}`);
 
@@ -43,14 +46,11 @@ const handle = async (req: VercelRequest, res: VercelResponse): NowReturn => {
 		await challongeUpdate(poll);
 	}
 
-	await limit.update(
-		{
-			polls: Object.assign(limitedPolls, { [id]: Date.now() }),
-			ip: getForwardedHeader(req),
-			count: limit.util.increment(),
-		},
-		userId
-	);
+	await redisClient.hmset(userId, {
+		polls: JSON.stringify(Object.assign(limitedPolls, { [id]: Date.now() })),
+		ip: getForwardedHeader(req),
+	});
+	await redisClient.hincrby(userId, 'count', 1);
 
 	const expires = addSeconds(new Date(Date.now()), 30);
 	const cookie = serialize(`vote-limit-${id}`, 'true', { expires, httpOnly: true });
@@ -72,18 +72,18 @@ async function getRateLimit(req: VercelRequest, id: number, userId: string) {
 	});
 	const isCookieLimited = limitedCookie != null; // Value doesn't matter, only definition
 
-	// Non-null assertion is safe becuase of check at beginning of `handle`
-	const dbLimit =
-		((await limit!.get(userId)) as { polls: Record<number, number> }) ??
-		(await limit!.put({ polls: {}, ip: getForwardedHeader(req) }, userId));
+	const limitedPolls: Record<number, number> =
+		JSON.parse((await redisClient.hget(userId, 'polls')) as string) ??
+		((await redisClient.hsetnx(userId, 'polls', '{}')) && {});
+
+	console.log(limitedPolls);
 
 	// Limit if stored date is less than 30 seconds from now
 	const isDbLimited =
-		dbLimit.polls && Math.round((Date.now() - dbLimit.polls[id]) / 1000) < 30 ? true : false;
+		limitedPolls && Math.round((Date.now() - limitedPolls[id]) / 1000) < 30 ? true : false;
 
 	console.log(`isCookieLimited: ${isCookieLimited} | isDbLimited: ${isDbLimited}`);
 
-	const limitedPolls = dbLimit.polls;
 	return { isCookieLimited, isDbLimited, limitedPolls };
 }
 

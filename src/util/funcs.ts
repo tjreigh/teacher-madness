@@ -1,8 +1,9 @@
 import { Poll, Vote } from '@typings';
 import { VercelRequest, VercelResponse } from '@vercel/node';
-import { db, users } from './db';
-import { v4 as uuidv4 } from 'uuid';
 import { serialize } from 'cookie';
+import { v4 as uuidv4 } from 'uuid';
+import { db, users } from './db';
+import { redisClient } from './redis';
 
 interface _IDObj {
 	id: number;
@@ -47,6 +48,7 @@ export const tryHandleFunc = (
 	} catch (err) {
 		const stackOrObj = err.stack ?? err;
 		if (err instanceof InvalidJSONError) return res.status(422).send(stackOrObj);
+		else if (err instanceof DBInitError) return res.status(503).send(stackOrObj);
 		return res.status(500).send(`Uncaught internal server error: \n${stackOrObj}`);
 	}
 
@@ -64,28 +66,30 @@ export const tryHandleFunc = (
 	}
 };
 
+async function genUserId() {
+	const userId = uuidv4();
+
+	await redisClient.hsetnx('users', userId, userId);
+	const idCookie = serialize('user-id', userId, { httpOnly: true });
+
+	return { userId, idCookie };
+}
+
 export async function getUserId(req: VercelRequest) {
 	if (!users) throw new DBInitError();
 
-	let userId = getCookie(req, 'user-id');
-	let putDb = '';
-	let idCookie = '';
+	const cookieId = getCookie(req, 'user-id');
 
-	if (!userId) {
-		userId = uuidv4();
+	console.log(`cookieId: ${cookieId}`);
 
-		putDb = (((await users.put(userId)) as unknown) as { value: string }).value;
-		idCookie = serialize('user-id', userId, { httpOnly: true });
-	}
+	if (!cookieId) return await genUserId();
 
-	const dbId = putDb
-		? userId
-		: ((await (await users.fetch({ value: userId }))[Symbol.asyncIterator]().next())
-				.value as Array<{ value: string }>)[0].value;
-	console.log(`userId: ${userId}, putDb: ${putDb}, dbId: ${dbId}`);
+	const dbId = (await redisClient.hget('users', cookieId)) as string;
 
-	if (dbId !== userId) throw new Error('User ID not recognized or could not be set');
-	return { userId, idCookie };
+	console.log(`dbId: ${dbId}`);
+
+	if (cookieId !== dbId) return await genUserId();
+	else return { userId: cookieId, idCookie: '' };
 }
 
 export function getCookie(req: VercelRequest, name: string) {

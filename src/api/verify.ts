@@ -3,43 +3,16 @@ import { serialize } from 'cookie';
 import { addHours } from 'date-fns';
 import fetch from 'node-fetch';
 import { v4 as uuidv4 } from 'uuid';
-import {
-	cleanBody,
-	DBInitError,
-	getCookie,
-	getUserId,
-	NowReturn,
-	tryHandleFunc,
-	verified,
-} from '../util';
-
-interface GRecaptchaResult {
-	success: boolean;
-	score: number;
-	action: string;
-	challenge_ts: Date;
-	hostname: string;
-	'error-codes'?: GRecaptchaError[];
-}
-
-enum GRecaptchaError {
-	'missing-input-secret' = 'The secret parameter is missing',
-	'invalid-input-secret' = 'The secret parameter is invalid or malformed',
-	'missing-input-response' = 'The response parameter is missing',
-	'invalid-input-response' = 'The response parameter is invalid or malformed',
-	'bad-request' = 'The request is invalid or malformed',
-	'timeout-or-duplicate' = 'The response is no longer valid: either is too old or has been used previously',
-}
+import { GRecaptchaResult } from '../types';
+import { cleanBody, getCookie, getUserId, NowReturn, redisClient, tryHandleFunc } from '../util';
 
 const handle = async (req: VercelRequest, res: VercelResponse): NowReturn => {
-	if (!verified) throw new DBInitError();
-
 	const { userId, idCookie } = await getUserId(req);
 
 	const verifiedCookie = getCookie(req, 'captcha-verified');
 
 	if (verifiedCookie != null) {
-		const dbVerified = ((await verified.get(userId)) as { value: string })?.value;
+		const dbVerified = await redisClient.hget('verified', userId);
 		console.log(dbVerified, verifiedCookie);
 		if (dbVerified && verifiedCookie === dbVerified)
 			return res.status(200).send('Already verified');
@@ -64,7 +37,7 @@ const handle = async (req: VercelRequest, res: VercelResponse): NowReturn => {
 
 	console.log(result);
 
-	if (!result.success) return res.status(403).send('reCAPTCHA failed');
+	if (!result.success || result.score < 0.5) return res.status(403).send('reCAPTCHA failed');
 	if (result['error-codes']?.length && result['error-codes'].length > 0) {
 		const errors: string[] = [];
 
@@ -76,7 +49,7 @@ const handle = async (req: VercelRequest, res: VercelResponse): NowReturn => {
 	}
 
 	const token = uuidv4();
-	await verified.put(token, userId);
+	await redisClient.hset('verified', userId, token);
 
 	const expires = addHours(new Date(Date.now()), 2);
 	const cookie = serialize('captcha-verified', token, { expires, httpOnly: true });

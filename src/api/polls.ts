@@ -12,6 +12,7 @@ const handle = async (req: VercelRequest, res: VercelResponse): NowReturn => {
 		.filter(it => isPoll(it))
 		.sort((a, b) => a.id - b.id);
 
+	res.setHeader('Cache-Control', 'max-age=0, s-maxage=86400');
 	return res.json(sorted);
 };
 

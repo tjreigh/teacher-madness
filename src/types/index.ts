@@ -12,3 +12,4 @@ export interface Poll {
 }
 
 export * from './challonge';
+export * from './captcha';

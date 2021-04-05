@@ -70,7 +70,6 @@ export const tryHandleFunc = (
 async function genUserId() {
 	const userId = uuidv4();
 
-	//await redisClient.hsetnx('users', userId, userId);
 	await usePrisma(prisma => prisma.user.create({ data: { id: userId, limited: [] } }));
 	const idCookie = serialize('user-id', userId, { httpOnly: true });
 
@@ -87,7 +86,6 @@ export async function getUserId(req: VercelRequest) {
 	if (!cookieId) return await genUserId();
 
 	const dbId = (await usePrisma(prisma => prisma.user.findUnique({ where: { id: cookieId } })))?.id;
-	//const dbId = (await redisClient.hget('users', cookieId)) as string;
 
 	console.log(`dbId: ${dbId}`);
 

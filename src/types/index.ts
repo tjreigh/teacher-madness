@@ -3,12 +3,12 @@ export interface Vote {
 	choice: number;
 }
 
-type PollEntry = { name: string; votes: number; challongeId?: number };
+type PollEntry = { name: string; votes: number; challongeId: number };
 
 export interface Poll {
 	id: number;
 	entries: PollEntry[];
-	challongeId?: number;
+	challongeId: number;
 }
 
 export * from './challonge';

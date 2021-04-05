@@ -7,7 +7,8 @@
 		"build": "vue-cli-service build",
 		"lint": "vue-cli-service lint",
 		"transform": "node transform.mjs",
-		"deploy": "yarn transform && vercel"
+		"deploy": "yarn transform && vercel",
+		"postinstall": "prisma generate"
 	},
 	"prisma": {
 		"schema": "src/util/schema.prisma"

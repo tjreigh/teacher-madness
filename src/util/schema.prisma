@@ -9,7 +9,7 @@ generator client {
 
 model Poll {
   id          Int         @id @default(autoincrement())
-  challongeId Int
+  challongeId Int         @unique
   entries     PollEntry[]
 }
 
@@ -18,13 +18,13 @@ model PollEntry {
   challongeId Int    @unique
   name        String @unique
   votes       Int
-  Poll        Poll?  @relation(fields: [pollId], references: [id])
-  pollId      Int?
+  Poll        Poll   @relation(fields: [pollId], references: [id])
+  pollId      Int    @unique
 }
 
 model User {
-  id       String @id
+  id       String  @id
   limited  Int[]
-	ip       String?
+  ip       String?
   verified String? @unique
 }

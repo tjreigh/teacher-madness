@@ -80,6 +80,8 @@ export default class PollView extends Vue {
 	}
 
 	async handleVote() {
+		if (this.choice == null) return alert('Please select someone to vote for');
+
 		this.loading = true;
 
 		await this.$recaptchaLoaded();
@@ -102,11 +104,9 @@ export default class PollView extends Vue {
 	}
 
 	private async voteReq() {
-		if (this.choice == null) return alert('Please select someone to vote for');
-
 		const vote: Vote = {
 			id: this.poll.id,
-			choice: this.choice,
+			choice: this.choice!, // Assertion safe because of check in `handleVote()`
 		};
 
 		console.log(vote);

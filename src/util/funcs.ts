@@ -3,6 +3,7 @@ import { VercelRequest, VercelResponse } from '@vercel/node';
 import { serialize } from 'cookie';
 import { v4 as uuidv4 } from 'uuid';
 import { db, users } from './db';
+import { usePrisma } from './prisma';
 import { redisClient } from './redis';
 
 interface _IDObj {
@@ -69,7 +70,8 @@ export const tryHandleFunc = (
 async function genUserId() {
 	const userId = uuidv4();
 
-	await redisClient.hsetnx('users', userId, userId);
+	//await redisClient.hsetnx('users', userId, userId);
+	await usePrisma(prisma => prisma.user.create({ data: { id: userId, limited: [] } }));
 	const idCookie = serialize('user-id', userId, { httpOnly: true });
 
 	return { userId, idCookie };
@@ -84,7 +86,8 @@ export async function getUserId(req: VercelRequest) {
 
 	if (!cookieId) return await genUserId();
 
-	const dbId = (await redisClient.hget('users', cookieId)) as string;
+	const dbId = (await usePrisma(prisma => prisma.user.findUnique({ where: { id: cookieId } })))?.id;
+	//const dbId = (await redisClient.hget('users', cookieId)) as string;
 
 	console.log(`dbId: ${dbId}`);
 

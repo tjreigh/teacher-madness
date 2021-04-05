@@ -4,7 +4,7 @@ import { addHours } from 'date-fns';
 import fetch from 'node-fetch';
 import { v4 as uuidv4 } from 'uuid';
 import { GRecaptchaResult } from '../types';
-import { cleanBody, getCookie, getUserId, NowReturn, redisClient, tryHandleFunc } from '../util';
+import { cleanBody, getCookie, getUserId, NowReturn, tryHandleFunc, usePrisma } from '../util';
 
 const handle = async (req: VercelRequest, res: VercelResponse): NowReturn => {
 	const { userId, idCookie } = await getUserId(req);
@@ -12,7 +12,10 @@ const handle = async (req: VercelRequest, res: VercelResponse): NowReturn => {
 	const verifiedCookie = getCookie(req, 'captcha-verified');
 
 	if (verifiedCookie != null) {
-		const dbVerified = await redisClient.hget('verified', userId);
+		//const dbVerified = await redisClient.hget('verified', userId);
+		const dbVerified = (
+			await usePrisma(prisma => prisma.user.findUnique({ where: { id: userId } }))
+		)?.verified;
 		console.log(dbVerified, verifiedCookie);
 		if (dbVerified && verifiedCookie === dbVerified)
 			return res.status(200).send('Already verified');
@@ -49,7 +52,10 @@ const handle = async (req: VercelRequest, res: VercelResponse): NowReturn => {
 	}
 
 	const token = uuidv4();
-	await redisClient.hset('verified', userId, token);
+	await usePrisma(prisma =>
+		prisma.user.update({ where: { id: userId }, data: { verified: { set: token } } })
+	);
+	//await redisClient.hset('verified', userId, token);
 
 	const expires = addHours(new Date(Date.now()), 2);
 	const cookie = serialize('captcha-verified', token, { expires, httpOnly: true });

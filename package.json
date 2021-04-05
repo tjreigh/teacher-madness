@@ -9,7 +9,11 @@
 		"transform": "node transform.mjs",
 		"deploy": "yarn transform && vercel"
 	},
+	"prisma": {
+		"schema": "src/util/schema.prisma"
+	},
 	"dependencies": {
+		"@prisma/client": "^2.20.1",
 		"@vercel/node": "1.9.1",
 		"common-tags": "^1.8.0",
 		"cookie": "^0.4.1",
@@ -17,6 +21,7 @@
 		"deta": "^0.0.8",
 		"fitty": "^2.3.3",
 		"node-fetch": "^2.6.1",
+		"prisma": "^2.20.1",
 		"tedis": "^0.1.12",
 		"textfit": "git+https://github.com/TJDoesCode/textFit",
 		"uuid": "^8.3.2",

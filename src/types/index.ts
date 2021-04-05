@@ -7,7 +7,7 @@ type PollEntry = { name: string; votes: number; challongeId?: number };
 
 export interface Poll {
 	id: number;
-	entries: [PollEntry, PollEntry];
+	entries: PollEntry[];
 	challongeId?: number;
 }
 

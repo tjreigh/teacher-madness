@@ -16,6 +16,7 @@ import {
 	NowReturn,
 	redisClient,
 	tryHandleFunc,
+	usePrisma,
 } from '../util';
 
 const handle = async (req: VercelRequest, res: VercelResponse): NowReturn => {
@@ -46,11 +47,15 @@ const handle = async (req: VercelRequest, res: VercelResponse): NowReturn => {
 		await challongeUpdate(poll);
 	}
 
-	await redisClient.hmset(userId, {
-		polls: JSON.stringify(Object.assign(limitedPolls, { [id]: Date.now() })),
-		ip: getForwardedHeader(req),
-	});
-	await redisClient.hincrby(userId, 'count', 1);
+	// await redisClient.hmset(userId, {
+	// 	polls: JSON.stringify(Object.assign(limitedPolls, { [id]: Date.now() })),
+	// 	ip: getForwardedHeader(req),
+	// });
+	// await redisClient.hincrby(userId, 'count', 1);
+
+	await usePrisma(prisma =>
+		prisma.poll.update({ where: { id }, data: { entries: { set: poll.entries } } })
+	);
 
 	const expires = addSeconds(new Date(Date.now()), 30);
 	const cookie = serialize(`vote-limit-${id}`, 'true', { expires, httpOnly: true });
@@ -72,9 +77,12 @@ async function getRateLimit(req: VercelRequest, id: number, userId: string) {
 	});
 	const isCookieLimited = limitedCookie != null; // Value doesn't matter, only definition
 
-	const limitedPolls: Record<number, number> =
-		JSON.parse((await redisClient.hget(userId, 'polls')) as string) ??
-		((await redisClient.hsetnx(userId, 'polls', '{}')) && {});
+	const limitedPolls = (
+		await usePrisma(prisma => prisma.user.findUnique({ where: { id: userId } }))
+	)?.limited;
+	// const limitedPolls: Record<number, number> =
+	// 	JSON.parse((await redisClient.hget(userId, 'polls')) as string) ??
+	// 	((await redisClient.hsetnx(userId, 'polls', '{}')) && {});
 
 	console.log(limitedPolls);
 

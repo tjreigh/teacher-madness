@@ -7,8 +7,6 @@ import { Poll, Vote } from '../types';
 import {
 	arrayHasIndex,
 	cleanBody,
-	db,
-	DBInitError,
 	getCookie,
 	getForwardedHeader,
 	getUserId,
@@ -19,8 +17,6 @@ import {
 } from '../util';
 
 const handle = async (req: VercelRequest, res: VercelResponse): NowReturn => {
-	if (!db) throw new DBInitError(); // This enables safe non-null assertions
-
 	const { id: pollId, choice } = cleanBody<Vote>(req);
 
 	const { userId, idCookie } = await getUserId(req);
@@ -33,7 +29,9 @@ const handle = async (req: VercelRequest, res: VercelResponse): NowReturn => {
 	)?.verified;
 	if (verifiedCookie !== dbVerified) return res.status(403).send('Captcha token not recognized');
 
-	const poll: Poll = (await db.get(pollId.toString())) as Poll;
+	const poll = await usePrisma(prisma =>
+		prisma.poll.findUnique({ where: { id: pollId }, include: { entries: true } })
+	);
 
 	if (!poll) return res.status(404).send(`Could not find poll with id ${pollId}`);
 
@@ -41,20 +39,17 @@ const handle = async (req: VercelRequest, res: VercelResponse): NowReturn => {
 
 	poll.entries[choice].votes++;
 
-	await db.update({ entries: poll.entries }, pollId.toString());
-
 	if (hasAllChallongeIds(poll)) {
 		await challongeUpdate(poll);
 	}
 
 	await usePrisma(prisma =>
-		prisma.poll.upsert({
+		prisma.poll.update({
 			where: { id: pollId },
-			update: {
+			data: {
 				//entries: { set: poll.entries },
 				entries: { update: { where: { pollId }, data: { votes: poll.entries[choice].votes } } },
 			},
-			create: { id: pollId, entries: { create: poll.entries }, challongeId: poll.challongeId },
 		})
 	);
 

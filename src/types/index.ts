@@ -3,13 +3,9 @@ export interface Vote {
 	choice: number;
 }
 
-type PollEntry = { name: string; votes: number; challongeId: number };
+import { Poll as pPoll, PollEntry } from '@prisma/client';
 
-export interface Poll {
-	id: number;
-	entries: PollEntry[];
-	challongeId: number;
-}
+export type Poll = pPoll & { entries: PollEntry[] };
 
 export * from './challonge';
 export * from './captcha';

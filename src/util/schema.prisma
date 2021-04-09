@@ -10,6 +10,7 @@ generator client {
 model Poll {
   id          Int         @id @default(autoincrement())
   challongeId Int         @unique
+  active      Boolean?    @default(value: true)
   entries     PollEntry[]
 }
 
@@ -23,7 +24,7 @@ model PollEntry {
 }
 
 model User {
-  id       String  @id
+  id       String  @unique
   limited  Int[]
   ip       String?
   verified String? @unique

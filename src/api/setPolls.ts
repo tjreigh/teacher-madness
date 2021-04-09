@@ -1,20 +1,21 @@
 import { VercelRequest, VercelResponse } from '@vercel/node';
 import { Poll } from '../types';
-import { cleanBody, db, DBInitError, incNextId, NowReturn, tryHandleFunc } from '../util';
+import { cleanBody, NowReturn, tryHandleFunc, usePrisma } from '../util';
 
 const handle = async (req: VercelRequest, res: VercelResponse): NowReturn => {
-	if (!db) throw new DBInitError();
-
 	const { polls } = cleanBody<{ polls: Array<Partial<Poll>> }>(req);
 	const finalPolls: Poll[] = [];
-	let nextId = await incNextId(0);
+	let nextId =
+		(await usePrisma(prisma => prisma.poll.findFirst({ where: {}, orderBy: { id: 'desc' } })))
+			?.id || 0;
+	console.log(nextId);
 
 	for (const poll of polls) {
 		if (!poll.entries?.every(e => e != null))
 			return res.status(422).send('Request body missing choice');
 
 		const obj = {
-			id: poll.id ?? nextId,
+			id: poll.id ?? (nextId === 0 ? 0 : nextId + 1),
 			entries: [
 				{
 					name: poll.entries[0].name,
@@ -41,9 +42,28 @@ const handle = async (req: VercelRequest, res: VercelResponse): NowReturn => {
 		finalPolls.push(obj as Poll);
 	}
 
-	await Promise.all(finalPolls.map(poll => db?.put(poll, poll.id.toString())));
-	await incNextId(nextId);
-	return res.status(201).json(finalPolls);
+	await usePrisma(prisma =>
+		Promise.all(
+			finalPolls.map(({ id, challongeId, entries }) =>
+				prisma.poll.upsert({
+					where: { id },
+					create: {
+						challongeId,
+						active: true,
+						entries: { createMany: { data: entries } },
+					},
+					update: { active: true },
+				})
+			)
+		)
+	);
+
+	// prisma.poll.updateMany({
+	// 	where: { id: { not: { in: finalPolls.map(p => p.id) } } },
+	// 	data: { active: false },
+	// });
+
+	res.status(201).json(finalPolls);
 };
 
 export default tryHandleFunc(handle, 'PUT');

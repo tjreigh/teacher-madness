@@ -2,23 +2,11 @@ import { Poll, Vote } from '@typings';
 import { VercelRequest, VercelResponse } from '@vercel/node';
 import { serialize } from 'cookie';
 import { v4 as uuidv4 } from 'uuid';
-import { db, users } from './db';
 import { usePrisma } from './prisma';
-import { redisClient } from './redis';
-
-interface _IDObj {
-	id: number;
-}
 
 class InvalidJSONError extends Error {
 	constructor(args?: string) {
 		super(args ?? 'Malformed JSON');
-	}
-}
-
-export class DBInitError extends Error {
-	constructor(args?: string) {
-		super(args ?? 'Database initialization failed');
 	}
 }
 
@@ -49,7 +37,6 @@ export const tryHandleFunc = (
 	} catch (err) {
 		const stackOrObj = err.stack ?? err;
 		if (err instanceof InvalidJSONError) return res.status(422).send(stackOrObj);
-		else if (err instanceof DBInitError) return res.status(503).send(stackOrObj);
 		return res.status(500).send(`Uncaught internal server error: \n${stackOrObj}`);
 	}
 
@@ -77,8 +64,6 @@ async function genUserId() {
 }
 
 export async function getUserId(req: VercelRequest) {
-	if (!users) throw new DBInitError();
-
 	const cookieId = getCookie(req, 'user-id');
 
 	console.log(`cookieId: ${cookieId}`);
@@ -119,39 +104,6 @@ export function cleanBody<T>(req: VercelRequest): T {
 	} catch (err) {
 		throw new InvalidJSONError('Malformed JSON');
 	}
-}
-
-/**
- * Fetches the nextId value from the database
- * @returns The nextId value from the database
- */
-export async function getNextId(): Promise<number> {
-	if (!db) throw new DBInitError();
-	const idObj = (await db.get('nextId')) as _IDObj;
-	return idObj?.id ?? null;
-}
-
-/**
- * Increments or resets the nextId value in the database
- * @param base - If provided, nextId will be reset to this value;
- * if not provided, existing value will be incremented
- * @returns The value nextId is set to
- */
-export async function incNextId(base?: number): Promise<number> {
-	if (!db) throw new DBInitError();
-	// Add nextId to db if doesn't already exist
-	if (!(await getNextId())) {
-		await db.put({ id: 1 }, 'nextId');
-		return 1;
-	}
-
-	const updates = {
-		id: base ?? db.util.increment(),
-	};
-
-	await db.update(updates, 'nextId');
-	const id = await getNextId();
-	return id;
 }
 
 export const arrayHasIndex = (array: any[], index: number) =>

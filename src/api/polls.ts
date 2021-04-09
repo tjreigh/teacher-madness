@@ -1,19 +1,16 @@
 import { VercelRequest, VercelResponse } from '@vercel/node';
-import { Poll } from '../types';
-import { db, DBInitError, isPoll, NowReturn, tryHandleFunc } from '../util';
+import { NowReturn, tryHandleFunc, usePrisma } from '../util';
 
 const handle = async (req: VercelRequest, res: VercelResponse): NowReturn => {
-	if (!db) throw new DBInitError();
+	const polls = await usePrisma(prisma =>
+		prisma.poll.findMany({
+			where: { active: true },
+			include: { entries: true },
+			orderBy: { id: 'asc' },
+		})
+	);
 
-	const polls: Poll[] | undefined = (await (await db.fetch())[Symbol.asyncIterator]().next()).value;
-
-	const sorted = polls
-		?.flat()
-		.filter(it => isPoll(it))
-		.sort((a, b) => a.id - b.id);
-
-	res.setHeader('Cache-Control', 'max-age=0, s-maxage=86400');
-	return res.json(sorted);
+	return res.json(polls);
 };
 
 export default tryHandleFunc(handle, 'GET');

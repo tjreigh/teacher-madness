@@ -54,10 +54,12 @@ export const tryHandleFunc = (
 	}
 };
 
-async function genUserId() {
+async function genUserId(req: VercelRequest) {
 	const userId = uuidv4();
 
-	await usePrisma(prisma => prisma.user.create({ data: { id: userId, limited: [] } }));
+	await usePrisma(prisma =>
+		prisma.user.create({ data: { id: userId, ip: getForwardedHeader(req) } })
+	);
 	const idCookie = serialize('user-id', userId, { httpOnly: true });
 
 	return { userId, idCookie };
@@ -68,13 +70,13 @@ export async function getUserId(req: VercelRequest) {
 
 	console.log(`cookieId: ${cookieId}`);
 
-	if (!cookieId) return await genUserId();
+	if (!cookieId) return await genUserId(req);
 
 	const dbId = (await usePrisma(prisma => prisma.user.findUnique({ where: { id: cookieId } })))?.id;
 
 	console.log(`dbId: ${dbId}`);
 
-	if (cookieId !== dbId) return await genUserId();
+	if (cookieId !== dbId) return await genUserId(req);
 	else return { userId: cookieId, idCookie: '' };
 }
 

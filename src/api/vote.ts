@@ -8,7 +8,6 @@ import {
 	arrayHasIndex,
 	cleanBody,
 	getCookie,
-	getForwardedHeader,
 	getUserId,
 	hasAllChallongeIds,
 	NowReturn,
@@ -20,7 +19,7 @@ const handle = async (req: VercelRequest, res: VercelResponse): NowReturn => {
 	const { id: pollId, choice } = cleanBody<Vote>(req);
 
 	const { userId, idCookie } = await getUserId(req);
-	const { isCookieLimited, isDbLimited, limitedPolls } = await getRateLimit(req, pollId, userId);
+	const { isCookieLimited, isDbLimited } = await getRateLimit(req, pollId, userId);
 	if (isCookieLimited || isDbLimited) return res.status(429).send('Ratelimited');
 
 	const verifiedCookie = getCookie(req, 'captcha-verified') ?? '';
@@ -43,25 +42,27 @@ const handle = async (req: VercelRequest, res: VercelResponse): NowReturn => {
 		await challongeUpdate(poll);
 	}
 
-	await usePrisma(prisma =>
-		prisma.poll.update({
+	await usePrisma(async prisma => {
+		const entry = poll.entries[choice];
+		await prisma.poll.update({
 			where: { id: pollId },
 			data: {
 				//entries: { set: poll.entries },
-				entries: { update: { where: { pollId }, data: { votes: poll.entries[choice].votes } } },
+				entries: {
+					update: {
+						where: { id_pollId: { id: entry.id, pollId } },
+						data: { votes: entry.votes },
+					},
+				},
 			},
-		})
-	);
+		});
 
-	await usePrisma(prisma =>
-		prisma.user.update({
-			where: { id: userId },
-			data: {
-				limited: limitedPolls?.splice(pollId, 1, Date.now()),
-				ip: getForwardedHeader(req),
-			},
-		})
-	);
+		await prisma.ratelimit.upsert({
+			where: { pollId_userId: { pollId, userId } },
+			create: { time: new Date(Date.now()), pollId, userId },
+			update: { time: new Date(Date.now()) },
+		});
+	});
 
 	const expires = addSeconds(new Date(Date.now()), 30);
 	const cookie = serialize(`vote-limit-${pollId}`, 'true', { expires, httpOnly: true });
@@ -71,31 +72,31 @@ const handle = async (req: VercelRequest, res: VercelResponse): NowReturn => {
 	return res.json(poll);
 };
 
-async function getRateLimit(req: VercelRequest, id: number, userId: string) {
+async function getRateLimit(req: VercelRequest, pollId: number, userId: string) {
 	const rawCookies = req.headers.cookie?.split('; ');
 	console.log('rawCookies', rawCookies);
 
 	// Check if cookie with poll id is present
 	const limitedCookie = rawCookies?.find(c => {
 		const split = c.split('=');
-		if (split[0] === `vote-limit-${id}`) return split;
+		if (split[0] === `vote-limit-${pollId}`) return split;
 		return undefined;
 	});
 	const isCookieLimited = limitedCookie != null; // Value doesn't matter, only definition
 
-	const limitedPolls = (
-		await usePrisma(prisma => prisma.user.findUnique({ where: { id: userId } }))
-	)?.limited;
+	const limited = await usePrisma(prisma =>
+		prisma.ratelimit.findUnique({ where: { pollId_userId: { pollId, userId } } })
+	);
 
-	console.log(limitedPolls);
+	console.log(limited);
 
 	// Limit if stored date is less than 30 seconds from now
 	const isDbLimited =
-		limitedPolls && Math.round((Date.now() - limitedPolls[id]) / 1000) < 30 ? true : false;
+		limited && Math.round((Date.now() - Number(limited.time)) / 1000) < 30 ? true : false;
 
 	console.log(`isCookieLimited: ${isCookieLimited} | isDbLimited: ${isDbLimited}`);
 
-	return { isCookieLimited, isDbLimited, limitedPolls };
+	return { isCookieLimited, isDbLimited };
 }
 
 async function challongeUpdate(poll: Poll) {

@@ -9,23 +9,38 @@ generator client {
 
 model Poll {
   id          Int         @id @default(autoincrement())
-  challongeId Int         @unique
+  challongeId Int
   active      Boolean?    @default(value: true)
   entries     PollEntry[]
+  limits      Ratelimit[]
+
+  @@unique([id, challongeId])
 }
 
 model PollEntry {
   id          Int    @id @default(autoincrement())
-  challongeId Int    @unique
-  name        String @unique
+  challongeId Int
+  name        String
   votes       Int
   Poll        Poll   @relation(fields: [pollId], references: [id])
-  pollId      Int    @unique
+  pollId      Int
+
+  @@unique([id, pollId])
 }
 
 model User {
-  id       String  @unique
-  limited  Int[]
+  id       String      @unique
   ip       String?
-  verified String? @unique
+  verified String?     @unique
+  limits   Ratelimit[]
+}
+
+model Ratelimit {
+  time   DateTime
+  poll   Poll     @relation(fields: [pollId], references: [id])
+  user   User     @relation(fields: [userId], references: [id])
+  pollId Int
+  userId String
+
+  @@id([pollId, userId])
 }

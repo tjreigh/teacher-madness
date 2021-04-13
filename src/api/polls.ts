@@ -10,7 +10,14 @@ const handle = async (req: VercelRequest, res: VercelResponse): NowReturn => {
 		})
 	);
 
-	return res.json(polls);
+	const sorted = polls.map(p => {
+		return {
+			...p,
+			entries: p.entries.sort((a, b) => a.id - b.id),
+		};
+	});
+
+	return res.json(sorted);
 };
 
 export default tryHandleFunc(handle, 'GET');

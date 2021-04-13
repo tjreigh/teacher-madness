@@ -28,11 +28,16 @@ const handle = async (req: VercelRequest, res: VercelResponse): NowReturn => {
 	)?.verified;
 	if (verifiedCookie !== dbVerified) return res.status(403).send('Captcha token not recognized');
 
-	const poll = await usePrisma(prisma =>
+	const rawPoll = await usePrisma(prisma =>
 		prisma.poll.findUnique({ where: { id: pollId }, include: { entries: true } })
 	);
 
-	if (!poll) return res.status(404).send(`Could not find poll with id ${pollId}`);
+	if (!rawPoll) return res.status(404).send(`Could not find poll with id ${pollId}`);
+
+	const poll: Poll = {
+		...rawPoll,
+		entries: rawPoll.entries.sort((a, b) => a.id - b.id),
+	};
 
 	if (!arrayHasIndex(poll.entries, choice)) return res.status(422).send('Invalid poll choice');
 

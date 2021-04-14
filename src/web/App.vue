@@ -9,7 +9,16 @@
 			</li>
 		</ul>
 
+		<Timer class="timer" :endtime="config.endTime"></Timer>
+
+		<div class="polls">
+			<div v-for="poll of polls" :key="poll.id">
+				<PollView :poll="poll" />
+			</div>
+		</div>
+
 		<div class="bracket-embed">
+			<button @click="toggleEmbed">{{ showEmbed ? 'Hide bracket' : 'Show bracket' }}</button>
 			<iframe
 				v-show="showEmbed"
 				:src="`https://challonge.com/${config.gameId}/module`"
@@ -19,15 +28,6 @@
 				scrolling="auto"
 				allowtransparency="true"
 			></iframe>
-			<button @click="toggleEmbed">{{ showEmbed ? 'Hide bracket' : 'Show bracket' }}</button>
-		</div>
-
-		<Timer class="timer" :endtime="config.endTime"></Timer>
-
-		<div class="polls">
-			<div v-for="poll of polls" :key="poll.id">
-				<PollView :poll="poll" />
-			</div>
 		</div>
 	</div>
 </template>

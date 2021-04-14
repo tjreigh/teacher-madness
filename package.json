@@ -7,7 +7,7 @@
 		"build": "vue-cli-service build",
 		"lint": "vue-cli-service lint",
 		"transform": "node transform.mjs",
-		"deploy": "yarn transform && vercel",
+		"deploy": "tsc --noEmit && yarn transform && vercel",
 		"postinstall": "prisma generate"
 	},
 	"prisma": {
@@ -27,6 +27,7 @@
 		"textfit": "git+https://github.com/TJDoesCode/textFit",
 		"uuid": "^8.3.2",
 		"vue": "2.6.12",
+		"vue-async-computed": "^3.9.0",
 		"vue-class-component": "7.2.6",
 		"vue-property-decorator": "9.1.2",
 		"vue-recaptcha-v3": "^1.9.0"

@@ -13,6 +13,7 @@ class InvalidJSONError extends Error {
 export type NowReturn = Promise<void | VercelResponse>;
 export type NowFunc = (req: VercelRequest, res: VercelResponse) => NowReturn;
 
+type HttpMethod = 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PURGE';
 type tryHandleOptions = { shouldAllowCors?: boolean };
 
 /**
@@ -24,12 +25,13 @@ type tryHandleOptions = { shouldAllowCors?: boolean };
  */
 export const tryHandleFunc = (
 	handle: NowFunc,
-	method: 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PURGE',
+	method: HttpMethod | HttpMethod[],
 	options: tryHandleOptions = { shouldAllowCors: false }
 ) => async (req: VercelRequest, res: VercelResponse): NowReturn => {
-	if (req.method?.toUpperCase() !== method) {
+	if (typeof method === 'string' && req.method?.toUpperCase() !== method)
 		return res.status(405).send(`Invalid HTTP method (expected ${method})`);
-	}
+	else if (typeof method === 'object' && !method.includes(req.method!.toUpperCase() as HttpMethod))
+		return res.status(405).send(`Invalid HTTP method (expected one of ${method.join(', ')})`);
 
 	try {
 		if (!process.env.NODE_ENV) return;

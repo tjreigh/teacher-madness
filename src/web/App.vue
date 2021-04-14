@@ -9,32 +9,68 @@
 			</li>
 		</ul>
 
-		<div v-for="poll of polls" :key="poll.id">
-			<PollView :poll="poll" />
+		<div class="bracket-embed">
+			<iframe
+				v-show="showEmbed"
+				:src="`https://challonge.com/${config.gameId}/module`"
+				width="100%"
+				height="500"
+				frameborder="0"
+				scrolling="auto"
+				allowtransparency="true"
+			></iframe>
+			<button @click="toggleEmbed">{{ showEmbed ? 'Hide bracket' : 'Show bracket' }}</button>
+		</div>
+
+		<Timer class="timer" :endtime="config.endTime"></Timer>
+
+		<div class="polls">
+			<div v-for="poll of polls" :key="poll.id">
+				<PollView :poll="poll" />
+			</div>
 		</div>
 	</div>
 </template>
 
 <script lang="ts">
-import { Poll } from '@typings';
+import { Config, Poll } from '@typings';
 import { Component, Vue } from 'vue-property-decorator';
+import AsyncComputed from './asyncComputed';
 
 @Component({
 	components: {
 		PollView: () => import(/* webpackChunkName: "PollView" */ '@web/components/PollView.vue'),
+		Timer: () => import(/* webpackChunkName: "Timer" */ '@web/components/Timer.vue'),
 	},
 })
 export default class Home extends Vue {
 	private polls: Poll[] | null = null;
+	private showEmbed = true;
 
+	// Await is not allowed in lifecycle hooks, must be extracted out
 	created() {
-		this.getPolls();
+		this.init();
+	}
+
+	async init() {
+		await this.getPolls();
+	}
+
+	@AsyncComputed()
+	async config() {
+		const res = await fetch('/api/config');
+		return res.ok ? ((await res.json()) as Config) : null;
 	}
 
 	async getPolls() {
 		const res = await fetch('/api/polls');
-		Vue.set(this, 'polls', await res.json()); // Must use Vue set method to enable reactivity
-		console.log(this.polls);
+		// Must use Vue set method to enable reactivity
+		if (res.ok) Vue.set(this, 'polls', await res.json());
+		else alert(`Error while fetching polls: \n${await res.text()}`);
+	}
+
+	private toggleEmbed() {
+		this.showEmbed = !this.showEmbed;
 	}
 }
 </script>
@@ -49,16 +85,12 @@ body {
 	-webkit-font-smoothing: antialiased;
 	-moz-osx-font-smoothing: grayscale;
 	text-align: center;
-	display: flex;
 	margin: 0 auto;
 	width: 95%;
-	flex-wrap: wrap;
-	flex-direction: row;
-	justify-content: center;
 }
 
 .header {
-	display: flex;
+	@extend %flex;
 	position: sticky;
 	top: 0;
 	width: 100%;
@@ -70,9 +102,14 @@ body {
 	overflow: hidden;
 	z-index: 50;
 	list-style-type: none;
-	justify-content: center;
-	flex-direction: row;
-	align-items: center;
+}
+
+.polls {
+	@extend %flex;
+}
+
+.bracket-embed {
+	margin: 15px 0;
 }
 
 .link {

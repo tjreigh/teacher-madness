@@ -44,3 +44,9 @@ model Ratelimit {
 
   @@id([pollId, userId])
 }
+
+model Config {
+  id      Int      @id @default(0)
+  gameId  String
+  endTime DateTime
+}

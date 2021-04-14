@@ -121,9 +121,9 @@
     fastq "^1.6.0"
 
 "@prisma/client@^2.20.1":
-  version "2.21.0"
-  resolved "https://registry.yarnpkg.com/@prisma/client/-/client-2.21.0.tgz#97cb64d7ac76c1cce7f65f7a207320733efbac3a"
-  integrity sha512-RMtX0sdDl5MDJ49WOvGMzqgPF5yN6DQMSpzr+jpCkL7kuHASGiVcBYpvkBlNNA5a186zKCHuaMdNb8h7hDS4/A==
+  version "2.21.1"
+  resolved "https://registry.yarnpkg.com/@prisma/client/-/client-2.21.1.tgz#790e09b7f0367a456cdb40cc5898d25494631106"
+  integrity sha512-37Sq4vBsZt21AvgMzo2kLvPs1LhqEWoelwGNK/tDNuDR+HbuxlDSX6lIiqSwd7s4/Lw5mx2Dtevpopq/RzaqzQ==
   dependencies:
     "@prisma/engines-version" "2.21.0-36.e421996c87d5f3c8f7eeadd502d4ad402c89464d"
 
@@ -2270,9 +2270,9 @@ dashdash@^1.12.0:
     assert-plus "^1.0.0"
 
 date-fns@^2.19.0:
-  version "2.20.3"
-  resolved "https://registry.yarnpkg.com/date-fns/-/date-fns-2.20.3.tgz#5a28718edb95a80db96187b25340959867d36bc8"
-  integrity sha512-BbiJSlfmr1Fnfi1OHY8arklKdwtZ9n3NkjCeK8G9gtEe0ZSUwJuwHc6gYBl0uoC0Oa5RdpJV1gBBdXcZi8Efdw==
+  version "2.21.0"
+  resolved "https://registry.yarnpkg.com/date-fns/-/date-fns-2.21.0.tgz#4672b8e926d1b37d5353dc14da44b883481ac927"
+  integrity sha512-lbAFpaKz7QuVxm6m1rmioh4BB2gmLx1r1JMYXU2A/ufT5ly4zEG7HYH4fvS/QfbdyC5rkYyiS30mYz4Q7XCO+w==
 
 de-indent@^1.0.2:
   version "1.0.2"
@@ -6312,9 +6312,9 @@ pretty-error@^2.0.2:
     renderkid "^2.0.4"
 
 prisma@^2.20.1:
-  version "2.21.0"
-  resolved "https://registry.yarnpkg.com/prisma/-/prisma-2.21.0.tgz#ffab3901fbd2335b77d9d939c5cf3031fe11a8f3"
-  integrity sha512-lmlfcWEyl24AO788DmZOerFl8npH0xW2aY1BmXLeTgHvovvk3/AJIYZNfaDEx9wuvjNLhZTExICMDAtJIFi3kQ==
+  version "2.21.1"
+  resolved "https://registry.yarnpkg.com/prisma/-/prisma-2.21.1.tgz#04314f87439fedc8ab9da0c55f3ad41321f36d80"
+  integrity sha512-uUnNaJTdbTNeZyJadu5rZnRlPi7o/u3ep9wqe4fZMNd70dyFl/q0RrAss6hqd6MTXPqknGNgxaoXIFNVRg37EA==
   dependencies:
     "@prisma/engines" "2.21.0-36.e421996c87d5f3c8f7eeadd502d4ad402c89464d"
 

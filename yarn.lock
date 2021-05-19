@@ -2414,12 +2414,12 @@ destroy@~1.0.4:
   resolved "https://registry.yarnpkg.com/destroy/-/destroy-1.0.4.tgz#978857442c44749e4206613e37946205826abd80"
   integrity sha1-l4hXRCxEdJ5CBmE+N5RiBYJqvYA=
 
-deta@^0.0.8:
-  version "0.0.8"
-  resolved "https://registry.yarnpkg.com/deta/-/deta-0.0.8.tgz#9195b13d34b92ba6492ffe35e3c1331d45434a19"
-  integrity sha512-yUABLzs340aKs8UYHAP+n3Ngo5w8TrnstQcwy5wSsxcr9pWy6vvmwP7d75hfkr6FLdeZPwVzA2tUZRyxWuLEVA==
+deta@^0.0.9:
+  version "0.0.9"
+  resolved "https://registry.yarnpkg.com/deta/-/deta-0.0.9.tgz#06c3005d69368f68baa41d645606521133745ddc"
+  integrity sha512-i7jcZsxiwYMaqdrWhKtQf/9CCIah5OSZME99X3saiUIuDiYKIR2w0xLSnvFlGE364e+SpeY9/be6CS3WSlZmpw==
   dependencies:
-    node-fetch "^2.6.0"
+    node-fetch "^2.6.1"
 
 detect-node@^2.0.4:
   version "2.0.4"
@@ -5221,7 +5221,7 @@ no-case@^2.2.0:
   dependencies:
     lower-case "^1.1.1"
 
-node-fetch@^2.6.0, node-fetch@^2.6.1:
+node-fetch@^2.6.1:
   version "2.6.1"
   resolved "https://registry.yarnpkg.com/node-fetch/-/node-fetch-2.6.1.tgz#045bd323631f76ed2e2b55573394416b639a0052"
   integrity sha512-V4aYg89jEoVRxRb2fJdAg8FHvI7cEyYdVAh94HH0UIK8oJxUfkjlDQN9RbMx+bEjP7+ggMiFRprSti032Oipxw==
